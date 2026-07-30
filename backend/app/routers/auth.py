@@ -1,15 +1,11 @@
-"""Authentication routes: register and (later) login."""
-from fastapi import APIRouter, Depends, status
+"""Authentication routes: register and login."""
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.user import UserCreate, UserResponse
-from app.services.auth_service import register_user
-
-from fastapi import HTTPException, status as http_status
-from app.schemas.user import UserLogin
+from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.schemas.token import Token
-from app.services.auth_service import authenticate_user, create_access_token
+from app.services.auth_service import register_user, authenticate_user, create_access_token
 
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
