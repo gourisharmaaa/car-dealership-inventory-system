@@ -95,7 +95,29 @@ Frontend tests (Jest/RTL) — dev dependencies may need to be installed. Example
 
 ## Screenshots
 
-Place screenshots of your final app under `docs/screenshots/`. Example files (placeholders) are already included.
+<img width="329" height="358" alt="image" src="https://github.com/user-attachments/assets/7f2f259a-6de1-458d-a287-7b73b101fbe3" />
+<img width="341" height="376" alt="image" src="https://github.com/user-attachments/assets/cd0d3044-30df-431a-b618-8d953a9ddb5d" />
+<img width="339" height="392" alt="image" src="https://github.com/user-attachments/assets/667596f8-938f-4209-a385-e9bc068ec305" />
+<img width="373" height="350" alt="image" src="https://github.com/user-attachments/assets/2ba3c935-8e64-4104-8d3b-6e794600bc8f" />
+<img width="338" height="390" alt="image" src="https://github.com/user-attachments/assets/9e8afec1-7165-4569-b01d-72843f60f578" />
+<img width="419" height="350" alt="image" src="https://github.com/user-attachments/assets/cda8c568-45ac-461b-9f9c-abb8ec96c5a9" />
+<img width="923" height="435" alt="image" src="https://github.com/user-attachments/assets/2d158cfe-648d-4dbb-90c9-88d74771a276" />
+<img width="924" height="476" alt="image" src="https://github.com/user-attachments/assets/e71e83f5-1d52-4a17-a864-d57acc4d4c57" />
+<img width="672" height="266" alt="image" src="https://github.com/user-attachments/assets/0c6ad0a9-4010-4920-8562-c009120442c4" />
+<img width="680" height="212" alt="image" src="https://github.com/user-attachments/assets/146818d7-9f4b-4d6e-9103-3a6278b598cd" />
+<img width="877" height="265" alt="image" src="https://github.com/user-attachments/assets/8b2eb98e-7b70-4063-a588-d2436e14b990" />
+<img width="893" height="454" alt="image" src="https://github.com/user-attachments/assets/09a041a1-1ec9-4679-964b-5800aa7222d3" />
+<img width="620" height="313" alt="image" src="https://github.com/user-attachments/assets/cb170b1b-259e-444a-9e77-5c323716e9ab" />
+
+
+
+
+
+
+
+
+
+
 
 ---
 
