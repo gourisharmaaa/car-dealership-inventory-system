@@ -1,5 +1,5 @@
 """Authentication routes: register and login."""
-from fastapi import APIRouter, Depends, HTTPException, status as http_status, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db

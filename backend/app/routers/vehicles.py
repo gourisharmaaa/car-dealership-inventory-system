@@ -1,6 +1,6 @@
 """Vehicle routes for inventory management."""
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_admin_user, get_current_user
@@ -83,6 +83,7 @@ def remove(
 @router.post("/{vehicle_id}/purchase", response_model=VehicleResponse)
 def purchase(
     vehicle_id: str,
+    quantity: int = Body(1, gt=0),
     db: Session = Depends(get_db),
     _: object = Depends(get_current_user),
 ) -> VehicleResponse:
@@ -90,7 +91,7 @@ def purchase(
     if not vehicle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vehicle not found")
     try:
-        return purchase_vehicle(db, vehicle)
+        return purchase_vehicle(db, vehicle, quantity)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
@@ -98,7 +99,7 @@ def purchase(
 @router.post("/{vehicle_id}/restock", response_model=VehicleResponse)
 def restock(
     vehicle_id: str,
-    quantity: int,
+    quantity: int = Body(..., gt=0),
     db: Session = Depends(get_db),
     _: object = Depends(get_current_admin_user),
 ) -> VehicleResponse:

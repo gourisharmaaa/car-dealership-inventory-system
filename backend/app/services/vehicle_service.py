@@ -1,5 +1,6 @@
 """Business logic for vehicle operations."""
 from typing import List, Optional
+from uuid import UUID as UUIDType
 from sqlalchemy.orm import Session
 
 from app.models.vehicle import Vehicle
@@ -25,7 +26,11 @@ def list_vehicles(db: Session) -> List[Vehicle]:
 
 
 def get_vehicle(db: Session, vehicle_id: str) -> Optional[Vehicle]:
-    return db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    try:
+        vehicle_uuid = UUIDType(vehicle_id)
+    except ValueError:
+        return None
+    return db.query(Vehicle).filter(Vehicle.id == vehicle_uuid).first()
 
 
 def search_vehicles(

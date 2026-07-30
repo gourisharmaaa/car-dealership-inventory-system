@@ -1,5 +1,6 @@
 """Authentication dependencies and JWT helpers."""
 from typing import Optional
+from uuid import UUID as UUIDType
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -14,7 +15,7 @@ from app.models.user import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-def get_user(db: Session, user_id: str) -> Optional[User]:
+def get_user(db: Session, user_id: UUIDType) -> Optional[User]:
     return db.query(User).filter(User.id == user_id).first()
 
 
@@ -29,9 +30,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError:
+        user_uuid = UUIDType(user_id)
+    except (JWTError, ValueError):
         raise credentials_exception
-    user = get_user(db, user_id)
+    user = get_user(db, user_uuid)
     if user is None:
         raise credentials_exception
     return user
