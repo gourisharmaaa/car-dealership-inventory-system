@@ -83,7 +83,7 @@ def remove(
 @router.post("/{vehicle_id}/purchase", response_model=VehicleResponse)
 def purchase(
     vehicle_id: str,
-    quantity: int = Body(1, gt=0),
+    quantity: int = Body(1, gt=0, embed=True),
     db: Session = Depends(get_db),
     _: object = Depends(get_current_user),
 ) -> VehicleResponse:
@@ -99,7 +99,7 @@ def purchase(
 @router.post("/{vehicle_id}/restock", response_model=VehicleResponse)
 def restock(
     vehicle_id: str,
-    quantity: int = Body(..., gt=0),
+    quantity: int = Body(..., gt=0, embed=True),
     db: Session = Depends(get_db),
     _: object = Depends(get_current_admin_user),
 ) -> VehicleResponse:

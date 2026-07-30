@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../services/api";
+import Loader from "../components/Loader";
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ function RegisterPage() {
     event.preventDefault();
     setError(null);
     setSuccess(null);
+    setIsLoading(true);
 
     // basic client-side validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -32,10 +34,13 @@ function RegisterPage() {
       setTimeout(() => navigate("/login"), 1400);
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to register.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const [success, setSuccess] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -77,9 +82,10 @@ function RegisterPage() {
           {success && <p className="text-sm text-emerald-600">{success}</p>}
           <button
             type="submit"
-            className="w-full rounded-xl bg-sky-600 px-4 py-3 text-white hover:bg-sky-700"
+            className="w-full rounded-xl bg-sky-600 px-4 py-3 text-white hover:bg-sky-700 disabled:opacity-60"
+            disabled={isLoading}
           >
-            Register
+            {isLoading ? <Loader message="Creating account..." /> : "Register"}
           </button>
         </form>
         <p className="mt-4 text-sm text-slate-500">

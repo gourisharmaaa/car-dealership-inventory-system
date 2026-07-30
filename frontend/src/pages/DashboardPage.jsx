@@ -10,6 +10,8 @@ import {
   setApiToken,
   fetchCurrentUser,
 } from "../services/api";
+import Loader from "../components/Loader";
+import PurchaseModal from "../components/PurchaseModal";
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -26,6 +28,11 @@ function DashboardPage() {
     quantity: "",
   });
   const [isAdmin, setIsAdmin] = useState(false);
+  const [restockCounts, setRestockCounts] = useState({});
+  const [purchaseVehicleSelected, setPurchaseVehicleSelected] = useState(null);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("car_dealership_token");
@@ -46,14 +53,20 @@ function DashboardPage() {
     try {
       const response = await fetchVehicles();
       setVehicles(response.data);
+      // reset restock counters
+      const initialCounts = {};
+      response.data.forEach((v) => { initialCounts[v.id] = 0; });
+      setRestockCounts(initialCounts);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || "Unable to load vehicles.");
+      const msg = getErrorMessage(err, "Unable to load vehicles.");
+      setError(msg);
     }
   };
 
   const handleSearch = async (event) => {
     event.preventDefault();
+    setIsSearching(true);
     try {
       const params = {
         make: filter.make || undefined,
@@ -65,18 +78,31 @@ function DashboardPage() {
       const response = await searchVehicles(params);
       setVehicles(response.data);
     } catch (err) {
-      setError(err.response?.data?.detail || "Search failed.");
+      const msg = getErrorMessage(err, "Search failed.");
+      setError(msg);
+    } finally {
+      setIsSearching(false);
     }
   };
 
-  const handlePurchase = async (id) => {
+  const openPurchaseModal = (vehicle) => setPurchaseVehicleSelected(vehicle);
+
+  const confirmPurchase = async (quantity) => {
+    if (!purchaseVehicleSelected) return;
+    setPurchaseLoading(true);
     try {
-      const resp = await purchaseVehicle(id, 1);
+      await purchaseVehicle(purchaseVehicleSelected.id, quantity);
       setSuccess("Purchase successful.");
       setTimeout(() => setSuccess(null), 2000);
+      setPurchaseVehicleSelected(null);
       await loadVehicles();
     } catch (err) {
-      setError(err.response?.data?.detail || "Unable to purchase vehicle.");
+      // eslint-disable-next-line no-console
+      console.error("purchase error", err);
+      const msg = getErrorMessage(err, "Unable to purchase vehicle.");
+      setError(msg);
+    } finally {
+      setPurchaseLoading(false);
     }
   };
 
@@ -87,38 +113,89 @@ function DashboardPage() {
       setTimeout(() => setSuccess(null), 2000);
       setVehicles((current) => current.filter((vehicle) => vehicle.id !== id));
     } catch (err) {
-      setError(err.response?.data?.detail || "Unable to delete vehicle.");
+      const msg = getErrorMessage(err, "Unable to delete vehicle.");
+      setError(msg);
     }
   };
 
   const handleRestock = async (id) => {
+    const qty = restockCounts[id] || 0;
+    if (qty <= 0) return;
     try {
-      const resp = await restockVehicle(id, 1);
+      setIsAdding(true);
+      await restockVehicle(id, qty);
       setSuccess("Restock successful.");
       setTimeout(() => setSuccess(null), 2000);
       await loadVehicles();
     } catch (err) {
-      setError(err.response?.data?.detail || "Unable to restock vehicle.");
+      // eslint-disable-next-line no-console
+      console.error("restock error", err);
+      const msg = getErrorMessage(err, "Unable to restock vehicle.");
+      setError(msg);
+    } finally {
+      setIsAdding(false);
+      setRestockCounts((c) => ({ ...c, [id]: 0 }));
     }
   };
 
   const handleAddVehicle = async (event) => {
     event.preventDefault();
     try {
-      await addVehicle({
+      setIsAdding(true);
+      const payload = {
         make: newVehicle.make,
         model: newVehicle.model,
         category: newVehicle.category,
         price: Number(newVehicle.price),
         quantity: Number(newVehicle.quantity),
-      });
-      setNewVehicle({ make: "", model: "", category: "", price: "", quantity: "" });
-      setSuccess("Vehicle added successfully.");
+      };
+      // if exact match exists, call restock instead of creating duplicate
+      const existing = vehicles.find(
+        (v) => v.make === payload.make && v.model === payload.model && v.category === payload.category && Number(v.price) === Number(payload.price),
+      );
+      if (existing) {
+        await restockVehicle(existing.id, payload.quantity);
+        setSuccess("Existing vehicle updated with additional stock.");
+      } else {
+        await addVehicle(payload);
+        setSuccess("Vehicle added successfully.");
+      }
       setTimeout(() => setSuccess(null), 2000);
+      setNewVehicle({ make: "", model: "", category: "", price: "", quantity: "" });
       await loadVehicles();
     } catch (err) {
-      setError(err.response?.data?.detail || "Unable to add vehicle.");
+      const msg = getErrorMessage(err, "Unable to add vehicle.");
+      setError(msg);
+    } finally {
+      setIsAdding(false);
     }
+  };
+
+  const formatApiError = (detail) => {
+    if (!detail) return null;
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d) => {
+          if (!d) return "";
+          if (typeof d === "string") return d;
+          if (d.msg) return d.msg;
+          if (d.message) return d.message;
+          return JSON.stringify(d);
+        })
+        .filter(Boolean)
+        .join(" | ");
+    }
+    if (typeof detail === "object") {
+      return detail.detail || detail.message || Object.values(detail).join(" ");
+    }
+    return String(detail);
+  };
+
+  const getErrorMessage = (err, fallback) => {
+    const detail = err?.response?.data?.detail;
+    const formatted = formatApiError(detail);
+    return formatted || err?.message || fallback;
   };
 
   const handleLogout = () => {
@@ -188,7 +265,7 @@ function DashboardPage() {
               type="submit"
               className="rounded-2xl bg-sky-600 px-6 py-3 text-white hover:bg-sky-700 md:col-span-4"
             >
-              Search
+              {isSearching ? <Loader message="Searching..." /> : "Search"}
             </button>
           </form>
         </section>
@@ -239,10 +316,10 @@ function DashboardPage() {
               />
               <button
                 type="submit"
-                className="rounded-2xl bg-emerald-600 px-6 py-3 text-white hover:bg-emerald-700 md:col-span-5"
-                disabled={!canAddVehicle}
+                className="rounded-2xl bg-emerald-600 px-6 py-3 text-white hover:bg-emerald-700 md:col-span-5 disabled:opacity-60"
+                disabled={!canAddVehicle || isAdding}
               >
-                Add vehicle
+                {isAdding ? <Loader message="Saving..." /> : "Add vehicle"}
               </button>
             </form>
           </section>
@@ -265,19 +342,35 @@ function DashboardPage() {
                 <div className="mt-4 flex items-center justify-between gap-4">
                   <p className="text-xl font-semibold text-slate-900">${(Number(vehicle.price) || 0).toFixed(2)}</p>
                   <button
-                    onClick={() => handlePurchase(vehicle.id)}
+                    onClick={() => openPurchaseModal(vehicle)}
                     disabled={vehicle.quantity === 0}
                     className="rounded-xl bg-sky-600 px-4 py-2 text-white disabled:cursor-not-allowed disabled:bg-slate-300"
                   >
                     Purchase
                   </button>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {isAdmin && (
-                    <>
+                <div className="mt-4 flex items-center justify-between gap-4">
+                  {isAdmin ? (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setRestockCounts((c) => ({ ...c, [vehicle.id]: Math.max(0, (c[vehicle.id] || 0) - 1) }))}
+                          className="rounded-full border border-slate-200 px-3 py-1"
+                        >
+                          -
+                        </button>
+                        <div className="px-3">{restockCounts[vehicle.id] || 0}</div>
+                        <button
+                          onClick={() => setRestockCounts((c) => ({ ...c, [vehicle.id]: (c[vehicle.id] || 0) + 1 }))}
+                          className="rounded-full border border-slate-200 px-3 py-1"
+                        >
+                          +
+                        </button>
+                      </div>
                       <button
                         onClick={() => handleRestock(vehicle.id)}
-                        className="rounded-xl bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700"
+                        disabled={(restockCounts[vehicle.id] || 0) <= 0}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-white disabled:opacity-60"
                       >
                         Restock
                       </button>
@@ -287,13 +380,21 @@ function DashboardPage() {
                       >
                         Delete
                       </button>
-                    </>
-                  )}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))}
           </div>
         </section>
+        {purchaseVehicleSelected && (
+          <PurchaseModal
+            vehicle={purchaseVehicleSelected}
+            onClose={() => setPurchaseVehicleSelected(null)}
+            onConfirm={confirmPurchase}
+            loading={purchaseLoading}
+          />
+        )}
       </div>
     </div>
   );

@@ -25,7 +25,28 @@ export const searchVehicles = (params) => api.get("/api/vehicles/search", { para
 export const addVehicle = (payload) => api.post("/api/vehicles", payload);
 export const updateVehicle = (id, payload) => api.put(`/api/vehicles/${id}`, payload);
 export const deleteVehicle = (id) => api.delete(`/api/vehicles/${id}`);
-export const purchaseVehicle = (id, quantity) => api.post(`/api/vehicles/${id}/purchase`, { quantity });
-export const restockVehicle = (id, quantity) => api.post(`/api/vehicles/${id}/restock`, { quantity });
+export const purchaseVehicle = (id, quantity) => {
+  const q = Number(quantity);
+  const normalized = Number.isFinite(q) ? Math.trunc(q) : 0;
+  const normalizedQty = normalized;
+  if (normalizedQty <= 0) {
+    return Promise.reject(new Error("Quantity must be a positive integer"));
+  }
+  // eslint-disable-next-line no-console
+  console.debug("API: purchase payload", { id, quantity: normalizedQty });
+  return api.post(`/api/vehicles/${id}/purchase`, { quantity: normalizedQty });
+};
+
+export const restockVehicle = (id, quantity) => {
+  const q = Number(quantity);
+  const normalized = Number.isFinite(q) ? Math.trunc(q) : 0;
+  const normalizedQty = normalized;
+  if (normalizedQty <= 0) {
+    return Promise.reject(new Error("Quantity must be a positive integer"));
+  }
+  // eslint-disable-next-line no-console
+  console.debug("API: restock payload", { id, quantity: normalizedQty });
+  return api.post(`/api/vehicles/${id}/restock`, { quantity: normalizedQty });
+};
 
 export default api;
