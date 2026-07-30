@@ -25,7 +25,8 @@ def db_session():
     ensures tests don't leak state into one another.
     """
     from app.core.database import Base 
-    from app.models.user import User # noqa: local import to avoid circular imports
+    from app.models.user import User  # noqa: local import to avoid circular imports
+    from app.models.vehicle import Vehicle  # noqa: local import ensures vehicle table is created
     Base.metadata.create_all(bind=engine)
     session = TestingSessionLocal()
     try:
