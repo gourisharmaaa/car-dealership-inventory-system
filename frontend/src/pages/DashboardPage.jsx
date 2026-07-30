@@ -8,6 +8,7 @@ import {
   restockVehicle,
   searchVehicles,
   setApiToken,
+  fetchCurrentUser,
 } from "../services/api";
 
 function DashboardPage() {
@@ -30,7 +31,11 @@ function DashboardPage() {
     if (token) {
       setApiToken(token);
       loadVehicles();
-      setIsAdmin(token !== "");
+      fetchCurrentUser().then((response) => {
+        setIsAdmin(response.data.role === "admin");
+      }).catch(() => {
+        setIsAdmin(false);
+      });
     } else {
       navigate("/login");
     }

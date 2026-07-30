@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser, setApiToken } from "../services/api";
+import { loginUser, setApiToken, fetchCurrentUser } from "../services/api";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -17,6 +17,8 @@ function LoginPage() {
       const token = response.data.access_token;
       localStorage.setItem("car_dealership_token", token);
       setApiToken(token);
+      const profileResponse = await fetchCurrentUser();
+      localStorage.setItem("car_dealership_user_role", profileResponse.data.role);
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to log in.");

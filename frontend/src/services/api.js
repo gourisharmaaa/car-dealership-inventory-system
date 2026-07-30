@@ -19,6 +19,7 @@ export const clearApiToken = () => {
 
 export const registerUser = (payload) => api.post("/api/auth/register", payload);
 export const loginUser = (payload) => api.post("/api/auth/login", payload);
+export const fetchCurrentUser = () => api.get("/api/auth/me");
 export const fetchVehicles = () => api.get("/api/vehicles");
 export const searchVehicles = (params) => api.get("/api/vehicles/search", { params });
 export const addVehicle = (payload) => api.post("/api/vehicles", payload);
