@@ -21,7 +21,14 @@ function LoginPage() {
       localStorage.setItem("car_dealership_user_role", profileResponse.data.role);
       navigate("/");
     } catch (err) {
-      setError(err.response?.data?.detail || "Unable to log in.");
+      const status = err.response?.status;
+      if (status === 401) {
+        setError("Invalid credentials. If you don't have an account, please register first.");
+      } else if (status === 422) {
+        setError("Please provide a valid email and password.");
+      } else {
+        setError(err.response?.data?.detail || "Unable to log in.");
+      }
     }
   };
 

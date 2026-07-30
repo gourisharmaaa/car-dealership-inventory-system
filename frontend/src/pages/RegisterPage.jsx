@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser, loginUser, setApiToken } from "../services/api";
+import { registerUser } from "../services/api";
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -12,18 +12,30 @@ function RegisterPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
+    setSuccess(null);
+
+    // basic client-side validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters and include letters and numbers.");
+      return;
+    }
 
     try {
       await registerUser({ email, password, role });
-      const response = await loginUser({ email, password });
-      const token = response.data.access_token;
-      localStorage.setItem("car_dealership_token", token);
-      setApiToken(token);
-      navigate("/");
+      // show success and redirect to login
+      setSuccess("Registration successful. Redirecting to login...");
+      setTimeout(() => navigate("/login"), 1400);
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to register.");
     }
   };
+
+  const [success, setSuccess] = useState(null);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -62,6 +74,7 @@ function RegisterPage() {
             </select>
           </label>
           {error && <p className="text-sm text-red-600">{error}</p>}
+          {success && <p className="text-sm text-emerald-600">{success}</p>}
           <button
             type="submit"
             className="w-full rounded-xl bg-sky-600 px-4 py-3 text-white hover:bg-sky-700"

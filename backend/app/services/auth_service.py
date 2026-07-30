@@ -19,8 +19,18 @@ def register_user(db: Session, user_data: UserCreate) -> User:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
+    # Basic password validations
+    password = user_data.password or ""
+    if len(password) < 8:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password must be at least 8 characters")
+    # ensure contains a number and a letter
+    if not any(c.isdigit() for c in password) or not any(c.isalpha() for c in password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one letter and one number",
+        )
 
-    hashed_password = get_password_hash(user_data.password)
+    hashed_password = get_password_hash(password)
     user = User(
         email=user_data.email,
         hashed_password=hashed_password,

@@ -17,6 +17,7 @@ function DashboardPage() {
   const [filter, setFilter] = useState({ make: "", model: "", category: "" });
   const [priceRange, setPriceRange] = useState({ min: "", max: "" });
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [newVehicle, setNewVehicle] = useState({
     make: "",
     model: "",
@@ -45,6 +46,7 @@ function DashboardPage() {
     try {
       const response = await fetchVehicles();
       setVehicles(response.data);
+      setError(null);
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to load vehicles.");
     }
@@ -69,7 +71,9 @@ function DashboardPage() {
 
   const handlePurchase = async (id) => {
     try {
-      await purchaseVehicle(id, 1);
+      const resp = await purchaseVehicle(id, 1);
+      setSuccess("Purchase successful.");
+      setTimeout(() => setSuccess(null), 2000);
       await loadVehicles();
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to purchase vehicle.");
@@ -79,6 +83,8 @@ function DashboardPage() {
   const handleDelete = async (id) => {
     try {
       await deleteVehicle(id);
+      setSuccess("Vehicle deleted.");
+      setTimeout(() => setSuccess(null), 2000);
       setVehicles((current) => current.filter((vehicle) => vehicle.id !== id));
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to delete vehicle.");
@@ -87,7 +93,9 @@ function DashboardPage() {
 
   const handleRestock = async (id) => {
     try {
-      await restockVehicle(id, 1);
+      const resp = await restockVehicle(id, 1);
+      setSuccess("Restock successful.");
+      setTimeout(() => setSuccess(null), 2000);
       await loadVehicles();
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to restock vehicle.");
@@ -105,6 +113,8 @@ function DashboardPage() {
         quantity: Number(newVehicle.quantity),
       });
       setNewVehicle({ make: "", model: "", category: "", price: "", quantity: "" });
+      setSuccess("Vehicle added successfully.");
+      setTimeout(() => setSuccess(null), 2000);
       await loadVehicles();
     } catch (err) {
       setError(err.response?.data?.detail || "Unable to add vehicle.");
@@ -184,6 +194,7 @@ function DashboardPage() {
         </section>
 
         {error && <p className="mb-4 rounded-2xl bg-red-50 p-4 text-red-700">{error}</p>}
+        {success && <p className="mb-4 rounded-2xl bg-emerald-50 p-4 text-emerald-700">{success}</p>}
 
         {isAdmin && (
           <section className="mb-8 rounded-3xl bg-white p-6 shadow-md">
@@ -252,7 +263,7 @@ function DashboardPage() {
                   </span>
                 </div>
                 <div className="mt-4 flex items-center justify-between gap-4">
-                  <p className="text-xl font-semibold text-slate-900">${vehicle.price.toFixed(2)}</p>
+                  <p className="text-xl font-semibold text-slate-900">${(Number(vehicle.price) || 0).toFixed(2)}</p>
                   <button
                     onClick={() => handlePurchase(vehicle.id)}
                     disabled={vehicle.quantity === 0}
