@@ -12,12 +12,13 @@ import {
 } from "../services/api";
 import Loader from "../components/Loader";
 import PurchaseModal from "../components/PurchaseModal";
+import FiltersPanel from "../components/FiltersPanel";
+import EditVehicleModal from "../components/EditVehicleModal";
 
 function DashboardPage() {
   const navigate = useNavigate();
   const [vehicles, setVehicles] = useState([]);
-  const [filter, setFilter] = useState({ make: "", model: "", category: "" });
-  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+  const [filter, setFilter] = useState({ make: "", model: "", category: "", minPrice: "", maxPrice: "" });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [newVehicle, setNewVehicle] = useState({
@@ -30,6 +31,7 @@ function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [restockCounts, setRestockCounts] = useState({});
   const [purchaseVehicleSelected, setPurchaseVehicleSelected] = useState(null);
+  const [editVehicleSelected, setEditVehicleSelected] = useState(null);
   const [purchaseLoading, setPurchaseLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
@@ -64,24 +66,44 @@ function DashboardPage() {
     }
   };
 
-  const handleSearch = async (event) => {
-    event.preventDefault();
-    setIsSearching(true);
+  const handleApplyFilters = async (applied) => {
+    setFilter((f) => ({ ...f, ...applied }));
     try {
+      setIsSearching(true);
       const params = {
-        make: filter.make || undefined,
-        model: filter.model || undefined,
-        category: filter.category || undefined,
-        min_price: priceRange.min || undefined,
-        max_price: priceRange.max || undefined,
+        make: applied.make || undefined,
+        model: applied.model || undefined,
+        category: applied.category || undefined,
+        min_price: applied.minPrice || undefined,
+        max_price: applied.maxPrice || undefined,
       };
       const response = await searchVehicles(params);
       setVehicles(response.data);
     } catch (err) {
-      const msg = getErrorMessage(err, "Search failed.");
-      setError(msg);
+      setError(getErrorMessage(err, "Filter apply failed."));
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleResetFilters = async () => {
+    setFilter({ make: "", model: "", category: "", minPrice: "", maxPrice: "" });
+    await loadVehicles();
+  };
+
+  const handleOpenEdit = (vehicle) => setEditVehicleSelected(vehicle);
+
+  const handleSaveVehicle = async (id, payload) => {
+    try {
+      // import updateVehicle lazily to avoid circular issues
+      const { updateVehicle } = await import("../services/api");
+      await updateVehicle(id, payload);
+      setSuccess("Vehicle updated.");
+      setTimeout(() => setSuccess(null), 2000);
+      setEditVehicleSelected(null);
+      await loadVehicles();
+    } catch (err) {
+      setError(getErrorMessage(err, "Unable to update vehicle."));
     }
   };
 
@@ -226,48 +248,9 @@ function DashboardPage() {
 
         <section className="mb-8 rounded-3xl bg-white p-6 shadow-md">
           <h2 className="text-xl font-semibold text-slate-900">Search vehicles</h2>
-          <form onSubmit={handleSearch} className="mt-4 grid gap-4 md:grid-cols-4">
-            <input
-              value={filter.make}
-              onChange={(event) => setFilter((current) => ({ ...current, make: event.target.value }))}
-              placeholder="Make"
-              className="rounded-2xl border border-slate-200 px-4 py-3"
-            />
-            <input
-              value={filter.model}
-              onChange={(event) => setFilter((current) => ({ ...current, model: event.target.value }))}
-              placeholder="Model"
-              className="rounded-2xl border border-slate-200 px-4 py-3"
-            />
-            <input
-              value={filter.category}
-              onChange={(event) => setFilter((current) => ({ ...current, category: event.target.value }))}
-              placeholder="Category"
-              className="rounded-2xl border border-slate-200 px-4 py-3"
-            />
-            <div className="grid gap-4 md:grid-cols-2">
-              <input
-                value={priceRange.min}
-                onChange={(event) => setPriceRange((current) => ({ ...current, min: event.target.value }))}
-                placeholder="Min price"
-                type="number"
-                className="rounded-2xl border border-slate-200 px-4 py-3"
-              />
-              <input
-                value={priceRange.max}
-                onChange={(event) => setPriceRange((current) => ({ ...current, max: event.target.value }))}
-                placeholder="Max price"
-                type="number"
-                className="rounded-2xl border border-slate-200 px-4 py-3"
-              />
-            </div>
-            <button
-              type="submit"
-              className="rounded-2xl bg-sky-600 px-6 py-3 text-white hover:bg-sky-700 md:col-span-4"
-            >
-              {isSearching ? <Loader message="Searching..." /> : "Search"}
-            </button>
-          </form>
+          <div className="mt-4">
+            <FiltersPanel vehicles={vehicles} initial={filter} onApply={handleApplyFilters} onReset={handleResetFilters} />
+          </div>
         </section>
 
         {error && <p className="mb-4 rounded-2xl bg-red-50 p-4 text-red-700">{error}</p>}
@@ -329,7 +312,7 @@ function DashboardPage() {
           <h2 className="text-xl font-semibold text-slate-900">Available vehicles</h2>
           <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {vehicles.map((vehicle) => (
-              <div key={vehicle.id} className="rounded-3xl border border-slate-200 p-5">
+              <div key={vehicle.id} onClick={() => handleOpenEdit(vehicle)} className="rounded-3xl border border-slate-200 p-5 cursor-pointer hover:shadow-lg">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900">{vehicle.make} {vehicle.model}</h3>
@@ -393,6 +376,14 @@ function DashboardPage() {
             onClose={() => setPurchaseVehicleSelected(null)}
             onConfirm={confirmPurchase}
             loading={purchaseLoading}
+          />
+        )}
+        {editVehicleSelected && (
+          <EditVehicleModal
+            vehicle={editVehicleSelected}
+            onClose={() => setEditVehicleSelected(null)}
+            onSave={handleSaveVehicle}
+            saving={isAdding}
           />
         )}
       </div>
